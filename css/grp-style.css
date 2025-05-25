@@ -1,0 +1,77 @@
+.grp-main {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  background: #fff;
+  color: #000;
+  border-radius: 10px;
+  padding: 10px 15px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  z-index: 9999;
+  font-size: 14px;
+  animation: fadeIn 0.5s ease;
+  max-width: 350px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+.grp-user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+}
+.grp-user-info .grp-user-photo {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #f1f1f1;
+}
+.grp-user-info .grp-user-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.grp-user-name p {
+  text-transform: capitalize;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.grp-user-info .grp-stars {
+  font-size: 18px;
+  color: #920202;
+}
+
+.grp-popup-content {
+  margin-top: 5px;
+  height: 100px;
+  overflow-y: auto;
+}
+
+.grp-popup-content p {
+    font-size: 14px;
+    line-height: 1.5;
+    color: #777;
+    text-align: left;
+    margin-top: 0 !important;
+}
+.grp-main a {
+    color: #000;
+    text-decoration: none !important;
+}
+.grp-main .grp-user-info:before {
+    content: "";
+    width: 30px;
+    height: 30px;
+    background-image: url(https://cdn.trustindex.io/assets/platform/Google/icon.svg);
+    border-radius: 50%;
+    position: absolute;
+    right: 0;
+    top: 0;
+}
