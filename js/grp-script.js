@@ -36,6 +36,9 @@ jQuery(document).ready(function ($) {
                             </div>
                         `);
 
+                        // Dynamically set the animation based on the selected type
+                        popup.css('animation-name', grp_ajax_object.animation_type);
+
                         $('#grp-preview-container').append(popup);
 
                         popup.hover(
@@ -66,7 +69,7 @@ jQuery(document).ready(function ($) {
                         }
                     }
 
-                    showNextReview(); // Trigger preview immediately
+                    showNextReview();
                 } else {
                     $('#grp-preview-container').html('<p>No reviews available for preview.</p>');
                 }
@@ -109,6 +112,9 @@ jQuery(document).ready(function ($) {
                             </a>
                         </div>
                     `);
+
+                    // Dynamically set the animation based on the selected type
+                    popup.css('animation-name', grp_ajax_object.animation_type);
 
                     $('body').append(popup);
 

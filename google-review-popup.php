@@ -16,7 +16,8 @@ function grp_enqueue_scripts() {
     wp_localize_script('grp-script', 'grp_ajax_object', array(
         'ajax_url' => admin_url('admin-ajax.php'),
         'popup_delay' => get_option('grp_popup_delay', 5000),
-        'hover_pause' => get_option('grp_hover_pause', 5000)
+        'hover_pause' => get_option('grp_hover_pause', 5000),
+        'animation_type' => get_option('grp_animation_type', 'fadeIn')
     ));
 }
 
@@ -29,7 +30,8 @@ function grp_admin_enqueue_scripts() {
         'ajax_url' => admin_url('admin-ajax.php'),
         'popup_delay' => get_option('grp_popup_delay', 5000),
         'hover_pause' => get_option('grp_hover_pause', 5000),
-        'is_admin' => true // Flag to indicate admin context
+        'animation_type' => get_option('grp_animation_type', 'fadeIn'),
+        'is_admin' => true
     ));
 }
 
@@ -67,6 +69,7 @@ function grp_register_settings() {
     register_setting('grp_settings_group', 'grp_delay');
     register_setting('grp_settings_group', 'grp_popup_delay');
     register_setting('grp_settings_group', 'grp_hover_pause');
+    register_setting('grp_settings_group', 'grp_animation_type'); // New: Animation type
 
     add_settings_section('grp_main_section', 'Main Settings', null, 'grp-settings');
 
@@ -75,6 +78,7 @@ function grp_register_settings() {
     add_settings_field('grp_delay', 'API Cache Delay (in ms)', 'grp_delay_field', 'grp-settings', 'grp_main_section');
     add_settings_field('grp_popup_delay', 'Popup Display Delay (in ms)', 'grp_popup_delay_field', 'grp-settings', 'grp_main_section');
     add_settings_field('grp_hover_pause', 'Hover Pause Duration (in ms)', 'grp_hover_pause_field', 'grp-settings', 'grp_main_section');
+    add_settings_field('grp_animation_type', 'Popup Animation', 'grp_animation_type_field', 'grp-settings', 'grp_main_section');
 }
 
 function grp_api_key_field() {
@@ -100,6 +104,22 @@ function grp_popup_delay_field() {
 function grp_hover_pause_field() {
     $value = esc_attr(get_option('grp_hover_pause', 5000));
     echo "<input type='number' name='grp_hover_pause' value='$value' />";
+}
+
+function grp_animation_type_field() {
+    $value = esc_attr(get_option('grp_animation_type', 'fadeIn'));
+    $animations = array(
+        'fadeIn' => 'Fade In',
+        'slideInLeft' => 'Slide In from Left',
+        'slideInRight' => 'Slide In from Right',
+        'zoomIn' => 'Zoom In'
+    );
+    echo "<select name='grp_animation_type'>";
+    foreach ($animations as $key => $label) {
+        $selected = $value === $key ? 'selected' : '';
+        echo "<option value='$key' $selected>$label</option>";
+    }
+    echo "</select>";
 }
 
 // AJAX review fetch
