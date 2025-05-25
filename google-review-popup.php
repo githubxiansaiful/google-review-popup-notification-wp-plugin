@@ -1,16 +1,34 @@
 <?php
-/*
-Plugin Name: Google Review Popup
-Description: A lightweight plugin to show Google reviews as timed pop-up notifications.
-Version: 1.0
-Author: Xian Saiful
-*/
+/**
+ * Google Review Popup Notification
+ *
+ * @package           GoogleReviewPopupNotification
+ * @author            Xian Saiful
+ * @copyright         2025 Xian Saiful
+ * @license           GPL-2.0-or-later
+ *
+ * @wordpress-plugin
+ * Plugin Name:       Google Review Popup Notification
+ * Plugin URI:        https://wordpress.org/plugins/search/google-review-popup-notification/ 
+ * Description:       A lightweight plugin to show Google reviews as timed pop-up notifications.
+ * Version:           1.0.0
+ * Requires at least: 5.0
+ * Requires PHP:      7.0
+ * Author:            Xian Saiful
+ * Author URI:        https://xiansaiful.com
+ * Text Domain:       google-review-popup
+ * License:           GPL v2 or later
+ * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
+ * Domain Path:       /languages
+ */
 
-if (!defined('ABSPATH')) exit;
+if (!defined('ABSPATH'))
+    exit;
 
 // Enqueue scripts and styles
 add_action('wp_enqueue_scripts', 'grp_enqueue_scripts');
-function grp_enqueue_scripts() {
+function grp_enqueue_scripts()
+{
     wp_enqueue_style('grp-style', plugin_dir_url(__FILE__) . 'css/grp-style.css');
     wp_enqueue_script('grp-script', plugin_dir_url(__FILE__) . 'js/grp-script.js', array('jquery'), null, true);
     wp_localize_script('grp-script', 'grp_ajax_object', array(
@@ -23,7 +41,8 @@ function grp_enqueue_scripts() {
 
 // Enqueue scripts and styles for admin
 add_action('admin_enqueue_scripts', 'grp_admin_enqueue_scripts');
-function grp_admin_enqueue_scripts() {
+function grp_admin_enqueue_scripts()
+{
     wp_enqueue_style('grp-style', plugin_dir_url(__FILE__) . 'css/grp-style.css');
     wp_enqueue_script('grp-script', plugin_dir_url(__FILE__) . 'js/grp-script.js', array('jquery'), null, true);
     wp_localize_script('grp-script', 'grp_ajax_object', array(
@@ -37,11 +56,13 @@ function grp_admin_enqueue_scripts() {
 
 // Admin menu
 add_action('admin_menu', 'grp_admin_menu');
-function grp_admin_menu() {
+function grp_admin_menu()
+{
     add_options_page('Google Review Popup', 'Google Review Popup', 'manage_options', 'grp-settings', 'grp_settings_page');
 }
 
-function grp_settings_page() {
+function grp_settings_page()
+{
     ?>
     <div class="wrap">
         <h1>Google Review Popup Settings</h1>
@@ -63,7 +84,8 @@ function grp_settings_page() {
 }
 
 add_action('admin_init', 'grp_register_settings');
-function grp_register_settings() {
+function grp_register_settings()
+{
     register_setting('grp_settings_group', 'grp_api_key');
     register_setting('grp_settings_group', 'grp_place_id');
     register_setting('grp_settings_group', 'grp_delay');
@@ -81,32 +103,38 @@ function grp_register_settings() {
     add_settings_field('grp_animation_type', 'Popup Animation', 'grp_animation_type_field', 'grp-settings', 'grp_main_section');
 }
 
-function grp_api_key_field() {
+function grp_api_key_field()
+{
     $value = esc_attr(get_option('grp_api_key'));
     echo "<input type='text' name='grp_api_key' value='$value' size='50' />";
 }
 
-function grp_place_id_field() {
+function grp_place_id_field()
+{
     $value = esc_attr(get_option('grp_place_id'));
     echo "<input type='text' name='grp_place_id' value='$value' size='50' />";
 }
 
-function grp_delay_field() {
+function grp_delay_field()
+{
     $value = esc_attr(get_option('grp_delay', 5000));
     echo "<input type='number' name='grp_delay' value='$value' />";
 }
 
-function grp_popup_delay_field() {
+function grp_popup_delay_field()
+{
     $value = esc_attr(get_option('grp_popup_delay', 5000));
     echo "<input type='number' name='grp_popup_delay' value='$value' />";
 }
 
-function grp_hover_pause_field() {
+function grp_hover_pause_field()
+{
     $value = esc_attr(get_option('grp_hover_pause', 5000));
     echo "<input type='number' name='grp_hover_pause' value='$value' />";
 }
 
-function grp_animation_type_field() {
+function grp_animation_type_field()
+{
     $value = esc_attr(get_option('grp_animation_type', 'fadeIn'));
     $animations = array(
         'fadeIn' => 'Fade In',
@@ -125,7 +153,8 @@ function grp_animation_type_field() {
 // AJAX review fetch
 add_action('wp_ajax_nopriv_grp_get_reviews', 'grp_get_reviews');
 add_action('wp_ajax_grp_get_reviews', 'grp_get_reviews');
-function grp_get_reviews() {
+function grp_get_reviews()
+{
     $api_key = get_option('grp_api_key');
     $place_id = get_option('grp_place_id');
     $delay = get_option('grp_delay');
