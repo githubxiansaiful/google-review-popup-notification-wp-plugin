@@ -1,25 +1,23 @@
 <?php
 /**
- * Google Review Popup Notification
+ * Review Popup Notification for Google
  *
- * @package           GoogleReviewPopupNotification
+ * @package           ReviewPopupNotificationForGoogle
  * @author            Xian Saiful
  * @copyright         2025 Xian Saiful
  * @license           GPL-2.0-or-later
  *
  * @wordpress-plugin
- * Plugin Name:       Google Review Popup Notification
- * Plugin URI:        https://wordpress.org/plugins/search/google-review-popup-notification/ 
+ * Plugin Name:       Review Popup Notification for Google
+ * Plugin URI:        https://wordpress.org/plugins/review-popup-notification-for/ 
  * Description:       A lightweight plugin to show Google reviews as timed pop-up notifications.
  * Version:           1.0.0
  * Requires at least: 5.0
  * Requires PHP:      7.0
  * Author:            Xian Saiful
  * Author URI:        https://xiansaiful.com
- * Text Domain:       google-review-popup
  * License:           GPL v2 or later
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
- * Domain Path:       /languages
  */
 
 if (!defined('ABSPATH'))
@@ -58,14 +56,14 @@ function grp_admin_enqueue_scripts()
 add_action('admin_menu', 'grp_admin_menu');
 function grp_admin_menu()
 {
-    add_options_page('Google Review Popup', 'Google Review Popup', 'manage_options', 'grp-settings', 'grp_settings_page');
+    add_options_page('Review Popup for Google', 'Review Popup for Google', 'manage_options', 'grp-settings', 'grp_settings_page');
 }
 
 function grp_settings_page()
 {
     ?>
     <div class="wrap">
-        <h1>Google Review Popup Settings</h1>
+        <h1>Review Popup for Google Settings</h1>
         <form method="post" action="options.php">
             <?php
             settings_fields('grp_settings_group');
@@ -86,12 +84,27 @@ function grp_settings_page()
 add_action('admin_init', 'grp_register_settings');
 function grp_register_settings()
 {
-    register_setting('grp_settings_group', 'grp_api_key');
-    register_setting('grp_settings_group', 'grp_place_id');
-    register_setting('grp_settings_group', 'grp_delay');
-    register_setting('grp_settings_group', 'grp_popup_delay');
-    register_setting('grp_settings_group', 'grp_hover_pause');
-    register_setting('grp_settings_group', 'grp_animation_type'); // New: Animation type
+    register_setting('grp_settings_group', 'grp_api_key', array(
+        'sanitize_callback' => 'sanitize_text_field'
+    ));
+    register_setting('grp_settings_group', 'grp_place_id', array(
+        'sanitize_callback' => 'sanitize_text_field'
+    ));
+    register_setting('grp_settings_group', 'grp_delay', array(
+        'sanitize_callback' => 'absint'
+    ));
+    register_setting('grp_settings_group', 'grp_popup_delay', array(
+        'sanitize_callback' => 'absint'
+    ));
+    register_setting('grp_settings_group', 'grp_hover_pause', array(
+        'sanitize_callback' => 'absint'
+    ));
+    register_setting('grp_settings_group', 'grp_animation_type', array(
+        'sanitize_callback' => 'sanitize_text_field'
+    ));
+    register_setting('grp_settings_group', 'grp_manual_reviews', array( // New setting for manual reviews
+        'sanitize_callback' => 'sanitize_textarea_field'
+    ));
 
     add_settings_section('grp_main_section', 'Main Settings', null, 'grp-settings');
 
@@ -101,36 +114,37 @@ function grp_register_settings()
     add_settings_field('grp_popup_delay', 'Popup Display Delay (in ms)', 'grp_popup_delay_field', 'grp-settings', 'grp_main_section');
     add_settings_field('grp_hover_pause', 'Hover Pause Duration (in ms)', 'grp_hover_pause_field', 'grp-settings', 'grp_main_section');
     add_settings_field('grp_animation_type', 'Popup Animation', 'grp_animation_type_field', 'grp-settings', 'grp_main_section');
+    add_settings_field('grp_manual_reviews', 'Additional Reviews (JSON)', 'grp_manual_reviews_field', 'grp-settings', 'grp_main_section');
 }
 
 function grp_api_key_field()
 {
     $value = esc_attr(get_option('grp_api_key'));
-    echo "<input type='text' name='grp_api_key' value='$value' size='50' />";
+    echo "<input type='text' name='grp_api_key' value='" . esc_attr($value) . "' size='50' />";
 }
 
 function grp_place_id_field()
 {
     $value = esc_attr(get_option('grp_place_id'));
-    echo "<input type='text' name='grp_place_id' value='$value' size='50' />";
+    echo "<input type='text' name='grp_place_id' value='" . esc_attr($value) . "' size='50' />";
 }
 
 function grp_delay_field()
 {
     $value = esc_attr(get_option('grp_delay', 5000));
-    echo "<input type='number' name='grp_delay' value='$value' />";
+    echo "<input type='number' name='grp_delay' value='" . esc_attr($value) . "' />";
 }
 
 function grp_popup_delay_field()
 {
     $value = esc_attr(get_option('grp_popup_delay', 5000));
-    echo "<input type='number' name='grp_popup_delay' value='$value' />";
+    echo "<input type='number' name='grp_popup_delay' value='" . esc_attr($value) . "' />";
 }
 
 function grp_hover_pause_field()
 {
     $value = esc_attr(get_option('grp_hover_pause', 5000));
-    echo "<input type='number' name='grp_hover_pause' value='$value' />";
+    echo "<input type='number' name='grp_hover_pause' value='" . esc_attr($value) . "' />";
 }
 
 function grp_animation_type_field()
@@ -144,10 +158,21 @@ function grp_animation_type_field()
     );
     echo "<select name='grp_animation_type'>";
     foreach ($animations as $key => $label) {
-        $selected = $value === $key ? 'selected' : '';
-        echo "<option value='$key' $selected>$label</option>";
+        printf(
+            '<option value="%s" %s>%s</option>',
+            esc_attr($key),
+            selected($value, $key, false),
+            esc_html($label)
+        );
     }
     echo "</select>";
+}
+
+function grp_manual_reviews_field()
+{
+    $value = esc_textarea(get_option('grp_manual_reviews'));
+    echo "<textarea name='grp_manual_reviews' rows='5' cols='50'>" . esc_textarea($value) . "</textarea>";
+    echo "<p>Enter additional reviews in JSON format. Example: [{\"author_name\": \"John Doe\", \"rating\": 4, \"text\": \"Great place!\", \"profile_photo_url\": \"\", \"author_url\": \"\"}]</p>";
 }
 
 // AJAX review fetch
@@ -167,7 +192,12 @@ function grp_get_reviews()
     $cached = get_transient($transient_key);
 
     if ($cached) {
-        wp_send_json_success(['reviews' => $cached, 'delay' => $delay]);
+        // Combine cached API reviews with manual reviews
+        $manual_reviews = json_decode(get_option('grp_manual_reviews'), true);
+        $manual_reviews = is_array($manual_reviews) ? $manual_reviews : [];
+        $combined_reviews = array_merge($cached, $manual_reviews);
+        $combined_reviews = array_slice($combined_reviews, 0, 10); // Limit to 10 reviews
+        wp_send_json_success(['reviews' => $combined_reviews, 'delay' => $delay]);
     }
 
     $url = "https://maps.googleapis.com/maps/api/place/details/json?place_id={$place_id}&fields=reviews&key={$api_key}";
@@ -180,7 +210,13 @@ function grp_get_reviews()
     $body = json_decode(wp_remote_retrieve_body($response), true);
     $reviews = $body['result']['reviews'] ?? [];
 
+    // Combine API reviews with manual reviews
+    $manual_reviews = json_decode(get_option('grp_manual_reviews'), true);
+    $manual_reviews = is_array($manual_reviews) ? $manual_reviews : [];
+    $combined_reviews = array_merge($reviews, $manual_reviews);
+    $combined_reviews = array_slice($combined_reviews, 0, 10); // Limit to 10 reviews
+
     set_transient($transient_key, $reviews, 12 * HOUR_IN_SECONDS);
 
-    wp_send_json_success(['reviews' => $reviews, 'delay' => $delay]);
+    wp_send_json_success(['reviews' => $combined_reviews, 'delay' => $delay]);
 }
