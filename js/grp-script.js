@@ -2,6 +2,10 @@ jQuery(document).ready(function ($) {
     // Check if in admin context
     if (typeof grp_ajax_object.is_admin !== 'undefined' && grp_ajax_object.is_admin) {
         $('#grp-preview-button').on('click', function () {
+            const pageLoadTime = Date.now(); // Track preview start time
+            const popupDuration = grp_ajax_object.popup_duration * 1000; // Convert to milliseconds
+            let isActive = true;
+
             $.post(grp_ajax_object.ajax_url, { action: 'grp_get_reviews' }, function (response) {
                 if (response.success && response.data.reviews.length) {
                     const reviews = response.data.reviews;
@@ -10,6 +14,14 @@ jQuery(document).ready(function ($) {
                     let timeoutId;
 
                     function showNextReview() {
+                        // Check if duration has elapsed
+                        if (popupDuration > 0 && (Date.now() - pageLoadTime) > popupDuration) {
+                            isActive = false;
+                            $('#grp-preview-container .grp-main').remove();
+                            return;
+                        }
+                        if (!isActive) return;
+
                         $('#grp-preview-container .grp-main').remove();
 
                         let review = reviews[currentIndex];
@@ -24,7 +36,7 @@ jQuery(document).ready(function ($) {
                                 <a href="${review.author_url}" target="_blank">
                                     <div class="grp-user-info">
                                         <div class="grp-user-photo">
-                                            <img src="${review.profile_photo_url || '/images/Portrait_Placeholder.jpg'}" alt="${review.author_name}'s photo">
+                                            <img src="${review.profile_photo_url || 'https://pbs.twimg.com/media/Gr4ltrsWEAASDtQ?format=jpg&name=240x240'}" alt="${review.author_name}'s photo">
                                         </div>
                                         <div class="grp-user-name">
                                             <p>${review.author_name}</p>
@@ -36,7 +48,6 @@ jQuery(document).ready(function ($) {
                             </div>
                         `);
 
-                        // Dynamically set the animation based on the selected type
                         popup.css('animation-name', grp_ajax_object.animation_type);
 
                         $('#grp-preview-container').append(popup);
@@ -49,22 +60,26 @@ jQuery(document).ready(function ($) {
                             function () {
                                 isHovered = false;
                                 timeoutId = setTimeout(() => {
-                                    popup.fadeOut(500, () => {
-                                        popup.remove();
-                                        currentIndex = (currentIndex + 1) % reviews.length;
-                                        setTimeout(showNextReview, grp_ajax_object.popup_delay);
-                                    });
+                                    if (isActive) {
+                                        popup.fadeOut(500, () => {
+                                            popup.remove();
+                                            currentIndex = (currentIndex + 1) % reviews.length;
+                                            setTimeout(showNextReview, grp_ajax_object.popup_delay);
+                                        });
+                                    }
                                 }, grp_ajax_object.hover_pause);
                             }
                         );
 
                         if (!isHovered) {
                             timeoutId = setTimeout(() => {
-                                popup.fadeOut(500, () => {
-                                    popup.remove();
-                                    currentIndex = (currentIndex + 1) % reviews.length;
-                                    setTimeout(showNextReview, grp_ajax_object.popup_delay);
-                                });
+                                if (isActive) {
+                                    popup.fadeOut(500, () => {
+                                        popup.remove();
+                                        currentIndex = (currentIndex + 1) % reviews.length;
+                                        setTimeout(showNextReview, grp_ajax_object.popup_delay);
+                                    });
+                                }
                             }, grp_ajax_object.hover_pause);
                         }
                     }
@@ -79,6 +94,10 @@ jQuery(document).ready(function ($) {
         });
     } else {
         // Front-end behavior
+        const pageLoadTime = Date.now(); // Track page load time
+        const popupDuration = grp_ajax_object.popup_duration * 1000; // Convert to milliseconds
+        let isActive = true;
+
         $.post(grp_ajax_object.ajax_url, { action: 'grp_get_reviews' }, function (response) {
             if (response.success && response.data.reviews.length) {
                 const reviews = response.data.reviews;
@@ -87,6 +106,14 @@ jQuery(document).ready(function ($) {
                 let timeoutId;
 
                 function showNextReview() {
+                    // Check if duration has elapsed
+                    if (popupDuration > 0 && (Date.now() - pageLoadTime) > popupDuration) {
+                        isActive = false;
+                        $('.grp-main').remove();
+                        return;
+                    }
+                    if (!isActive) return;
+
                     $('.grp-main').remove();
 
                     let review = reviews[currentIndex];
@@ -101,7 +128,7 @@ jQuery(document).ready(function ($) {
                             <a href="${review.author_url}" target="_blank">
                                 <div class="grp-user-info">
                                     <div class="grp-user-photo">
-                                        <img src="${review.profile_photo_url || '/images/Portrait_Placeholder.jpg'}" alt="${review.author_name}'s photo">
+                                        <img src="${review.profile_photo_url || 'https://pbs.twimg.com/media/Gr4ltrsWEAASDtQ?format=jpg&name=240x240'}" alt="${review.author_name}'s photo">
                                     </div>
                                     <div class="grp-user-name">
                                         <p>${review.author_name}</p>
@@ -113,7 +140,6 @@ jQuery(document).ready(function ($) {
                         </div>
                     `);
 
-                    // Dynamically set the animation based on the selected type
                     popup.css('animation-name', grp_ajax_object.animation_type);
 
                     $('body').append(popup);
@@ -126,22 +152,26 @@ jQuery(document).ready(function ($) {
                         function () {
                             isHovered = false;
                             timeoutId = setTimeout(() => {
-                                popup.fadeOut(500, () => {
-                                    popup.remove();
-                                    currentIndex = (currentIndex + 1) % reviews.length;
-                                    setTimeout(showNextReview, grp_ajax_object.popup_delay);
-                                });
+                                if (isActive) {
+                                    popup.fadeOut(500, () => {
+                                        popup.remove();
+                                        currentIndex = (currentIndex + 1) % reviews.length;
+                                        setTimeout(showNextReview, grp_ajax_object.popup_delay);
+                                    });
+                                }
                             }, grp_ajax_object.hover_pause);
                         }
                     );
 
                     if (!isHovered) {
                         timeoutId = setTimeout(() => {
-                            popup.fadeOut(500, () => {
-                                popup.remove();
-                                currentIndex = (currentIndex + 1) % reviews.length;
-                                setTimeout(showNextReview, grp_ajax_object.popup_delay);
-                            });
+                            if (isActive) {
+                                popup.fadeOut(500, () => {
+                                    popup.remove();
+                                    currentIndex = (currentIndex + 1) % reviews.length;
+                                    setTimeout(showNextReview, grp_ajax_object.popup_delay);
+                                });
+                            }
                         }, grp_ajax_object.hover_pause);
                     }
 

@@ -11,7 +11,7 @@
  * Plugin Name:       Review Popup Notification for Google
  * Plugin URI:        https://wordpress.org/plugins/review-popup-notification-for/ 
  * Description:       A lightweight plugin to show Google reviews as timed pop-up notifications.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Requires at least: 5.0
  * Requires PHP:      7.0
  * Author:            Xian Saiful
@@ -33,7 +33,8 @@ function grp_enqueue_scripts()
         'ajax_url' => admin_url('admin-ajax.php'),
         'popup_delay' => get_option('grp_popup_delay', 5000),
         'hover_pause' => get_option('grp_hover_pause', 5000),
-        'animation_type' => get_option('grp_animation_type', 'fadeIn')
+        'animation_type' => get_option('grp_animation_type', 'fadeIn'),
+        'popup_duration' => get_option('grp_popup_duration', 300)
     ));
 }
 
@@ -48,6 +49,7 @@ function grp_admin_enqueue_scripts()
         'popup_delay' => get_option('grp_popup_delay', 5000),
         'hover_pause' => get_option('grp_hover_pause', 5000),
         'animation_type' => get_option('grp_animation_type', 'fadeIn'),
+        'popup_duration' => get_option('grp_popup_duration', 300),
         'is_admin' => true
     ));
 }
@@ -102,8 +104,14 @@ function grp_register_settings()
     register_setting('grp_settings_group', 'grp_animation_type', array(
         'sanitize_callback' => 'sanitize_text_field'
     ));
-    register_setting('grp_settings_group', 'grp_manual_reviews', array( // New setting for manual reviews
+    register_setting('grp_settings_group', 'grp_manual_reviews', array(
         'sanitize_callback' => 'sanitize_textarea_field'
+    ));
+    register_setting('grp_settings_group', 'grp_popup_duration', array(
+        'sanitize_callback' => 'absint'
+    ));
+    register_setting('grp_settings_group', 'grp_review_order', array( // New: Review order setting
+        'sanitize_callback' => 'sanitize_text_field'
     ));
 
     add_settings_section('grp_main_section', 'Main Settings', null, 'grp-settings');
@@ -115,6 +123,8 @@ function grp_register_settings()
     add_settings_field('grp_hover_pause', 'Hover Pause Duration (in ms)', 'grp_hover_pause_field', 'grp-settings', 'grp_main_section');
     add_settings_field('grp_animation_type', 'Popup Animation', 'grp_animation_type_field', 'grp-settings', 'grp_main_section');
     add_settings_field('grp_manual_reviews', 'Additional Reviews (JSON)', 'grp_manual_reviews_field', 'grp-settings', 'grp_main_section');
+    add_settings_field('grp_popup_duration', 'Popup Active Duration (in seconds)', 'grp_popup_duration_field', 'grp-settings', 'grp_main_section');
+    add_settings_field('grp_review_order', 'Review Display Order', 'grp_review_order_field', 'grp-settings', 'grp_main_section');
 }
 
 function grp_api_key_field()
@@ -170,9 +180,37 @@ function grp_animation_type_field()
 
 function grp_manual_reviews_field()
 {
-    $value = esc_textarea(get_option('grp_manual_reviews'));
+    $value = get_option('grp_manual_reviews');
+    $value = stripslashes($value);
     echo "<textarea name='grp_manual_reviews' rows='5' cols='50'>" . esc_textarea($value) . "</textarea>";
     echo "<p>Enter additional reviews in JSON format. Example: [{\"author_name\": \"John Doe\", \"rating\": 4, \"text\": \"Great place!\", \"profile_photo_url\": \"\", \"author_url\": \"\"}]</p>";
+}
+
+function grp_popup_duration_field()
+{
+    $value = esc_attr(get_option('grp_popup_duration', 300));
+    echo "<input type='number' name='grp_popup_duration' value='" . esc_attr($value) . "' min='0' />";
+    echo "<p>Time (in seconds) after page load after which the popup will no longer show. Set to 0 for no limit.</p>";
+}
+
+function grp_review_order_field()
+{
+    $value = esc_attr(get_option('grp_review_order', 'default_first'));
+    $options = array(
+        'default_first' => 'Default First (Google Reviews First)',
+        'manual_first' => 'Manual First (Additional Reviews First)'
+    );
+    echo "<select name='grp_review_order'>";
+    foreach ($options as $key => $label) {
+        printf(
+            '<option value="%s" %s>%s</option>',
+            esc_attr($key),
+            selected($value, $key, false),
+            esc_html($label)
+        );
+    }
+    echo "</select>";
+    echo "<p>Choose whether Google reviews or manual reviews should display first in the popup cycle.</p>";
 }
 
 // AJAX review fetch
@@ -192,10 +230,12 @@ function grp_get_reviews()
     $cached = get_transient($transient_key);
 
     if ($cached) {
-        // Combine cached API reviews with manual reviews
         $manual_reviews = json_decode(get_option('grp_manual_reviews'), true);
         $manual_reviews = is_array($manual_reviews) ? $manual_reviews : [];
-        $combined_reviews = array_merge($cached, $manual_reviews);
+        $review_order = get_option('grp_review_order', 'default_first');
+        $combined_reviews = ($review_order === 'manual_first') 
+            ? array_merge($manual_reviews, $cached) 
+            : array_merge($cached, $manual_reviews);
         $combined_reviews = array_slice($combined_reviews, 0, 10); // Limit to 10 reviews
         wp_send_json_success(['reviews' => $combined_reviews, 'delay' => $delay]);
     }
@@ -213,10 +253,13 @@ function grp_get_reviews()
     // Combine API reviews with manual reviews
     $manual_reviews = json_decode(get_option('grp_manual_reviews'), true);
     $manual_reviews = is_array($manual_reviews) ? $manual_reviews : [];
-    $combined_reviews = array_merge($reviews, $manual_reviews);
+    $review_order = get_option('grp_review_order', 'default_first');
+    $combined_reviews = ($review_order === 'manual_first') 
+        ? array_merge($manual_reviews, $reviews) 
+        : array_merge($reviews, $manual_reviews);
     $combined_reviews = array_slice($combined_reviews, 0, 10); // Limit to 10 reviews
 
-    set_transient($transient_key, $reviews, 12 * HOUR_IN_SECONDS);
+    set_transient($transient_key, $combined_reviews, 12 * HOUR_IN_SECONDS);
 
     wp_send_json_success(['reviews' => $combined_reviews, 'delay' => $delay]);
 }

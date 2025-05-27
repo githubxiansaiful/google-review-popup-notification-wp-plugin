@@ -12,6 +12,8 @@
   animation-duration: 0.5s;
   animation-timing-function: ease;
   max-width: 350px;
+  width: 90%;
+  z-index: 99999999999999999999999999999999999;
 }
 
 @keyframes fadeIn {
@@ -50,6 +52,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: 50%;
 }
 .grp-user-name p {
   text-transform: capitalize;
@@ -75,6 +78,7 @@
     color: #777;
     text-align: left;
     margin-top: 0 !important;
+    text-transform: math-auto !important;
 }
 .grp-main a {
     color: #000;
